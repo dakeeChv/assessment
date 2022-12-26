@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/lib/pq"
 )
 
 // Expense is  Expense tracking model.
@@ -29,6 +31,7 @@ func (s *Service) Create(ctx context.Context, in Expense) (Expense, error) {
 	if err != nil {
 		return Expense{}, fmt.Errorf("Create(): db prepare context failure: %w", err)
 	}
+	result, err := stmt.ExecContext(ctx, in.Title, in.Amount, in.Note, pq.Array(in.Tags))
 	if err != nil {
 		return Expense{}, fmt.Errorf("Create(): db exec statement failure: %w", err)
 	}
