@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+// Expense is  Expense tracking model.
 type Expense struct {
 	ID     int64    `json:"id"`
 	Title  string   `json:"title"`
@@ -18,12 +19,16 @@ type Service struct {
 	db *sql.DB
 }
 
+// NewService returns expense service.
+func NewService(_ context.Context, db *sql.DB) (*Service, error) {
+	return &Service{db: db}, nil
+}
+
 func (s *Service) Create(ctx context.Context, in Expense) (Expense, error) {
 	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4)`)
 	if err != nil {
 		return Expense{}, fmt.Errorf("Create(): db prepare context failure: %w", err)
 	}
-	result, err := stmt.ExecContext(ctx, in.Title, in.Amount, in.Note, in.Tags)
 	if err != nil {
 		return Expense{}, fmt.Errorf("Create(): db exec statement failure: %w", err)
 	}
