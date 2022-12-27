@@ -21,7 +21,7 @@ func (h *Handler) CreateExpense(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	resp, err := h.svc.Create(ctx, req)
+	resp, err := h.expense.Create(ctx, req)
 	if err != nil {
 		ref := uuid.New()
 		log.Printf("\nlogId: %s, %v\n", ref, err)
