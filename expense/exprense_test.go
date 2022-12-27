@@ -22,10 +22,12 @@ func TestCreateExpense(t *testing.T) {
 	defer db.Close()
 
 	t.Run("Success", func(t *testing.T) {
-		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4)`)).
-			ExpectExec().
-			WithArgs("strawberry smoothie", 79.00, "night market promotion discount 10 bath", pq.Array([]string{"food", "beverage"})).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4) RETURNING id, title, amount, note, tags`)).
+			ExpectQuery().
+			WillReturnRows(
+				sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+					AddRow(1, "strawberry smoothie", 79.00, "night market promotion discount 10 bath", pq.Array([]string{"food", "beverage"})),
+			)
 
 		in := expn.Expense{
 			Title:  "strawberry smoothie",
@@ -53,11 +55,10 @@ func TestCreateExpense(t *testing.T) {
 		assert.Equal(t, want.Tags, got.Tags)
 	})
 
-	t.Run("Failed to db exec", func(t *testing.T) {
-		want := errors.New("sql: converting argument $4 type: unsupported type []string, a slice of string")
-		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4)`)).
-			ExpectExec().
-			WithArgs("strawberry smoothie", 79.00, "night market promotion discount 10 bath", pq.Array([]string{"food", "beverage"})).
+	t.Run("Failed to db scan row", func(t *testing.T) {
+		want := errors.New(`sql: Scan error on column index 4, name "tags": unsupported Scan, storing driver.Value type string into type *[]string`)
+		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4) RETURNING id, title, amount, note, tags`)).
+			ExpectQuery().
 			WillReturnError(want)
 
 		in := expn.Expense{
@@ -82,7 +83,8 @@ func TestCreateExpense(t *testing.T) {
 
 	t.Run("Failed to db prepare", func(t *testing.T) {
 		want := errors.New("call to Prepare statement with query 'INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3)', was not expected")
-		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4)`)).WillReturnError(want)
+		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4) RETURNING id, title, amount, note, tags`)).
+			WillReturnError(want)
 
 		in := expn.Expense{
 			Title:  "strawberry smoothie",
