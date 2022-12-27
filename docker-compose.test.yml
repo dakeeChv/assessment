@@ -1,10 +1,10 @@
 version: '3.2'
 
 networks:
-  integration-test-example:
+  integration-test-assessment:
 
 services:
-  it_tests:
+  integration_tests:
     build:
       context: .
       dockerfile: ./Dockerfile.test
@@ -13,7 +13,7 @@ services:
     depends_on:
       - db
     networks:
-      - integration-test-example
+      - integration-test-assessment
   db:
     image: postgres:12.12
     environment:
@@ -24,4 +24,4 @@ services:
     volumes:
       - ./db:/docker-entrypoint-initdb.d/
     networks:
-      - integration-test-example
+      - integration-test-assessment
