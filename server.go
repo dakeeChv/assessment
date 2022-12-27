@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	emdw "github.com/labstack/echo/v4/middleware"
@@ -59,8 +61,24 @@ func execute() error {
 	h.SetupRoute(e)
 
 	cerr := make(chan error, 1)
-	cerr <- e.Start(fmt.Sprintf(":%s", PORT))
-	<-cerr
+	ctx, cancel = signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
+	go func() {
+		cerr <- e.Start(fmt.Sprintf(":%s", PORT))
+	}()
+
+	select {
+	case <-ctx.Done():
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := e.Shutdown(ctx); err != nil {
+			return fmt.Errorf("failed to shut down the server: %v", err)
+		}
+		fmt.Println("server shutdown")
+	case err := <-cerr:
+		return fmt.Errorf("failed to start the echo server: %v", err)
+	}
 
 	return nil
 }
