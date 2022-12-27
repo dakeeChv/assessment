@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.9.1
-	github.com/lib/pq v1.0.0
+	github.com/lib/pq v1.10.7
 	github.com/proullon/ramsql v0.0.0-20220719091513-bf3c20043516
 	github.com/stretchr/testify v1.8.1
 )
