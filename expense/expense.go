@@ -27,17 +27,17 @@ func NewService(_ context.Context, db *sql.DB) (*Service, error) {
 }
 
 func (s *Service) Create(ctx context.Context, in Expense) (Expense, error) {
-	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4)`)
+	stmt, err := s.db.PrepareContext(ctx, `INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4) RETURNING id, title, amount, note, tags`)
 	if err != nil {
 		return Expense{}, fmt.Errorf("Create(): db prepare context failure: %w", err)
 	}
-	result, err := stmt.ExecContext(ctx, in.Title, in.Amount, in.Note, pq.Array(in.Tags))
+
+	err = stmt.QueryRowContext(ctx, in.Title, in.Amount, in.Note, pq.Array(in.Tags)).Scan(&in.ID, &in.Title, &in.Amount, &in.Note, pq.Array(&in.Tags))
 	if err != nil {
-		return Expense{}, fmt.Errorf("Create(): db exec statement failure: %w", err)
+		return Expense{}, fmt.Errorf("Create(): db scan row: %w", err)
 	}
 
 	out := in
-	out.ID, _ = result.LastInsertId()
 
 	return out, nil
 }
