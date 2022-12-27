@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dakeeChv/assessment/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 
 	expn "github.com/dakeeChv/assessment/expense"
+	"github.com/dakeeChv/assessment/handler"
 )
 
 const (
@@ -26,34 +26,30 @@ const (
 	pgdns = "postgresql://root:root@db/assessment?sslmode=disable"
 )
 
-var (
-	baseurl = fmt.Sprintf("http://localhost:%d", port)
-)
-
 func TestCreateExpense(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	e := echo.New()
+	db, err := sql.Open("postgres", pgdns)
+	if err != nil {
+		log.Printf("failed to db open: %v\n", err)
+	}
+	defer db.Close()
+	if err := db.PingContext(ctx); err != nil {
+		log.Printf("failed to db connect: %v\n", err)
+	}
 
-	go func(e *echo.Echo) {
-		db, err := sql.Open("postgres", pgdns)
-		if err != nil {
-			log.Printf("failed to db open: %v\n", err)
-		}
-		defer db.Close()
-		// if err := db.PingContext(ctx); err != nil {
-		// 	log.Printf("failed to db connect: %v\n", err)
-		// }
+	expense, _ := expn.NewService(ctx, db)
+	h, _ := handler.NewHandler(ctx, expense)
+	h.SetupRoute(e)
 
-		expense, _ := expn.NewService(ctx, db)
-		h, _ := handler.NewHandler(ctx, expense)
-		h.SetupRoute(e)
+	go func() {
 		e.Start(fmt.Sprintf(":%d", port))
-	}(e)
+	}()
 
 	for {
-		conn, err := net.DialTimeout("tcp", baseurl, 25*time.Second)
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), 30*time.Second)
 		if err != nil {
 			log.Printf("failed to dial timeout: %v", err)
 		}
@@ -65,17 +61,18 @@ func TestCreateExpense(t *testing.T) {
 	rbody := `{"title":"strawberry smoothie","amount":79,"note":"night market promotion discount 10 bath","tags":["food","beverage"]}`
 
 	want := expn.Expense{}
-	err := json.Unmarshal([]byte(rbody), &want)
+	err = json.Unmarshal([]byte(rbody), &want)
 	if err != nil {
 		log.Printf("failed to ummarshal want: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/expenses", baseurl), strings.NewReader(rbody))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:%d/expenses", port), strings.NewReader(rbody))
 	assert.NoError(t, err)
 
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	resp, err := http.DefaultClient.Do(req)
+	assert.Equal(t, 201, resp.StatusCode)
 	assert.NoError(t, err)
 
 	got := expn.Expense{}
@@ -95,5 +92,4 @@ func TestCreateExpense(t *testing.T) {
 	defer cancel()
 	err = e.Shutdown(ctx)
 	assert.NoError(t, err)
-
 }
