@@ -11,6 +11,9 @@ import (
 	"github.com/labstack/echo/v4"
 	emdw "github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+
+	expn "github.com/dakeeChv/assessment/expense"
+	handler "github.com/dakeeChv/assessment/handler"
 )
 
 func GetEnv(key, fallback string) string {
@@ -48,6 +51,16 @@ func execute() error {
 	if err := migrateDB(ctx, db); err != nil {
 		return fmt.Errorf("failed to initialize db schema: %v", err)
 	}
+
+	expense, _ := expn.NewService(ctx, db)
+	h, _ := handler.NewHandler(ctx, expense)
+
+	e := newEchoServer()
+	h.SetupRoute(e)
+
+	cerr := make(chan error, 1)
+	cerr <- e.Start(fmt.Sprintf(":%s", PORT))
+	<-cerr
 
 	return nil
 }
