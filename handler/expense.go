@@ -5,9 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	expn "github.com/dakeeChv/assessment/expense"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+
+	expn "github.com/dakeeChv/assessment/expense"
 )
 
 func (h *Handler) CreateExpense(c echo.Context) error {
@@ -32,5 +33,5 @@ func (h *Handler) CreateExpense(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusCreated, resp)
 }
