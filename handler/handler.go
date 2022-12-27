@@ -21,6 +21,6 @@ func NewHandler(_ context.Context, expense *expn.Service) (*Handler, error) {
 }
 
 func (h *Handler) SetupRoute(e *echo.Echo) {
-	v1 := e.Group("/expenses")
-	v1.POST("/", h.CreateExpense)
+	v1 := e.Group("")
+	v1.POST("/expenses", h.CreateExpense)
 }
