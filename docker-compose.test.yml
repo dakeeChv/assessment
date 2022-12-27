@@ -1,0 +1,27 @@
+version: '3.2'
+
+networks:
+  integration-test-assessment:
+
+services:
+  integration_tests:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.test
+    volumes:
+      - /home/zephyrus-s-gx531gm/Documents/KBTG/assessment:/go/src/target
+    depends_on:
+      - db
+    networks:
+      - integration-test-assessment
+  db:
+    image: postgres:12.12
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: assessment
+    restart: on-failure
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    networks:
+      - integration-test-assessment

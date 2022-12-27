@@ -1,0 +1,30 @@
+### Go ###
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Crash log files
+crash.log
+
+### macOS ###
+.DS_Store
+.idea
+
+#### Loadtest Related Files ####
+results.bin
+
+#### VS Code Debugger Files ####
+.vscode
+__debug_bin
+
+### Environment ###
+.env
