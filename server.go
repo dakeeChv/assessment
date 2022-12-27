@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/labstack/echo/v4"
 	emdw "github.com/labstack/echo/v4/middleware"
+	_ "github.com/lib/pq"
 )
 
 func GetEnv(key, fallback string) string {
@@ -24,8 +26,9 @@ var (
 )
 
 func main() {
-	fmt.Println("Please use server.go for main file")
-	fmt.Println("start at port:", os.Getenv("PORT"))
+	if err := execute(); err != nil {
+		log.Fatalf("execute(): %v", err)
+	}
 }
 
 func execute() error {
@@ -41,6 +44,11 @@ func execute() error {
 	}
 	defer db.Close()
 
+	//Auto initial migration.
+	if err := migrateDB(ctx, db); err != nil {
+		return fmt.Errorf("failed to initialize db schema: %v", err)
+	}
+
 	return nil
 }
 
@@ -55,4 +63,20 @@ func newEchoServer() *echo.Echo {
 	)
 	e.GET("/health", func(c echo.Context) error { return c.NoContent(http.StatusOK) })
 	return e
+}
+
+func migrateDB(ctx context.Context, db *sql.DB) error {
+	query := `CREATE TABLE IF NOT EXISTS expenses (
+		id SERIAL PRIMARY KEY,
+		title TEXT,
+		amount FLOAT,
+		note TEXT,
+		tags TEXT[]
+	)`
+
+	_, err := db.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	return nil
 }
