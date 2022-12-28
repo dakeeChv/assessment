@@ -70,9 +70,10 @@ func TestCreateExpense(t *testing.T) {
 	assert.NoError(t, err)
 
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req.Header.Set(echo.HeaderAuthorization, "November 10, 2009")
 
 	resp, err := http.DefaultClient.Do(req)
-	assert.Equal(t, 201, resp.StatusCode)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.NoError(t, err)
 
 	got := expn.Expense{}

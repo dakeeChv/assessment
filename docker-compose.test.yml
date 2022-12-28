@@ -9,7 +9,7 @@ services:
       context: .
       dockerfile: ./Dockerfile.test
     volumes:
-      - /home/zephyrus-s-gx531gm/Documents/KBTG/assessment:/go/src/target
+      - $PWD:/go/src/target
     depends_on:
       - db
     networks:
