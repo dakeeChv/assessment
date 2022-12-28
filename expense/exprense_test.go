@@ -237,4 +237,34 @@ func TestUpdateExpense(t *testing.T) {
 		assert.Equal(t, want.Note, got.Note)
 		assert.Equal(t, want.Tags, got.Tags)
 	})
+
+	t.Run("Error no row", func(t *testing.T) {
+		want := expn.Expense{
+			ID:     123,
+			Title:  "apple smoothie",
+			Amount: 89,
+			Note:   "no discount",
+			Tags:   []string{"beverage"},
+		}
+
+		mock.ExpectQuery(regexp.QuoteMeta("UPDATE expenses SET title=$1, amount=$2, note=$3, tags=$4 WHERE id=$5 RETURNING id, title, amount, note, tags")).
+			WithArgs(want.Title, want.Amount, want.Note, pq.Array(want.Tags), want.ID).
+			WillReturnError(sql.ErrNoRows)
+
+		ctx := context.Background()
+		expense, _ := expn.NewService(ctx, db)
+
+		got, err := expense.Update(ctx, want)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+
+		assert.ErrorIs(t, err, expn.ErrNoExpense)
+		assert.Empty(t, got.ID)
+		assert.Empty(t, got.Title)
+		assert.Empty(t, got.Amount)
+		assert.Empty(t, got.Note)
+		assert.Empty(t, got.Tags)
+	})
 }
