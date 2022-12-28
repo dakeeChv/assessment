@@ -2,6 +2,7 @@ package expense_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"regexp"
 	"testing"
@@ -148,5 +149,28 @@ func TestGetExpense(t *testing.T) {
 		assert.Equal(t, want.Amount, got.Amount)
 		assert.Equal(t, want.Note, got.Note)
 		assert.Equal(t, want.Tags, got.Tags)
+	})
+
+	t.Run("Error no row", func(t *testing.T) {
+		want := expn.Expense{
+			ID: 1,
+		}
+
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, title, amount, note, tags from expenses where id=$1")).
+			WithArgs(want.ID).
+			WillReturnError(sql.ErrNoRows)
+
+		ctx := context.Background()
+		expense, _ := expn.NewService(ctx, db)
+
+		got, err := expense.Get(ctx, want.ID)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+
+		assert.NotEmpty(t, err)
+		assert.Equal(t, expn.Expense{}, got)
+		assert.ErrorIs(t, err, expn.ErrNoExpense)
 	})
 }
