@@ -3,10 +3,13 @@ package expense
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/lib/pq"
 )
+
+var ErrNoExpense = errors.New("no expense")
 
 // Expense is  Expense tracking model.
 type Expense struct {
@@ -38,6 +41,21 @@ func (s *Service) Create(ctx context.Context, in Expense) (Expense, error) {
 	}
 
 	out := in
+
+	return out, nil
+}
+
+func (s *Service) Get(ctx context.Context, id int64) (Expense, error) {
+	query := `SELECT id, title, amount, note, tags from expenses where id=$1`
+
+	var out Expense
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&out.ID, &out.Title, &out.Amount, &out.Note, pq.Array(&out.Tags))
+	if err == sql.ErrNoRows {
+		return Expense{}, ErrNoExpense
+	}
+	if err != nil {
+		return Expense{}, fmt.Errorf("Get(): db scan row: %w", err)
+	}
 
 	return out, nil
 }
