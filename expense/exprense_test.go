@@ -108,3 +108,45 @@ func TestCreateExpense(t *testing.T) {
 		assert.ErrorIs(t, err, want)
 	})
 }
+
+func TestGetExpense(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	t.Run("Success", func(t *testing.T) {
+		want := expn.Expense{
+			ID:     1,
+			Title:  "strawberry smoothie",
+			Amount: 79,
+			Note:   "night market promotion discount 10 bath",
+			Tags:   []string{"food", "beverage"},
+		}
+
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, title, amount, note, tags from expenses where id=$1")).
+			WithArgs(want.ID).
+			WillReturnRows(
+				sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+					AddRow(1, "strawberry smoothie", 79.00, "night market promotion discount 10 bath", pq.Array([]string{"food", "beverage"})),
+			)
+
+		ctx := context.Background()
+		expense, _ := expn.NewService(ctx, db)
+
+		got, err := expense.Get(ctx, want.ID)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, got.ID)
+		assert.Equal(t, want.ID, got.ID)
+		assert.Equal(t, want.Title, got.Title)
+		assert.Equal(t, want.Amount, got.Amount)
+		assert.Equal(t, want.Note, got.Note)
+		assert.Equal(t, want.Tags, got.Tags)
+	})
+}
