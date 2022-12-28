@@ -44,4 +44,5 @@ func (h *Handler) SetupRoute(e *echo.Echo) {
 	v1 := e.Group("")
 	v1.Use(cmdw())
 	v1.POST("/expenses", h.CreateExpense)
+	v1.GET("/expenses/:id", h.GetExpense)
 }
