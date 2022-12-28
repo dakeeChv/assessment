@@ -5,3 +5,5 @@ CREATE TABLE IF NOT EXISTS expenses (
   note TEXT,
   tags TEXT[]
 );
+
+INSERT INTO expenses(id, title, amount, note, tags) VALUES(121,'watermelon',54,'Big C promotion discount 9 bath','{"food","beverage"}')
