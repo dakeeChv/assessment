@@ -3,10 +3,13 @@ package expense
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/lib/pq"
 )
+
+var ErrNoExpense = errors.New("no expense")
 
 // Expense is  Expense tracking model.
 type Expense struct {
