@@ -22,19 +22,21 @@ func TestCreateExpense(t *testing.T) {
 	defer db.Close()
 
 	t.Run("Success", func(t *testing.T) {
-		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4) RETURNING id, title, amount, note, tags`)).
-			ExpectQuery().
-			WillReturnRows(
-				sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-					AddRow(1, "strawberry smoothie", 79.00, "night market promotion discount 10 bath", pq.Array([]string{"food", "beverage"})),
-			)
-
 		in := expn.Expense{
 			Title:  "strawberry smoothie",
 			Amount: 79,
 			Note:   "night market promotion discount 10 bath",
 			Tags:   []string{"food", "beverage"},
 		}
+
+		mock.ExpectPrepare(regexp.QuoteMeta(`INSERT INTO expenses(title, amount, note, tags) VALUES($1, $2, $3, $4) RETURNING id, title, amount, note, tags`)).
+			ExpectQuery().
+			WillReturnRows(
+				sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+					AddRow(1, "strawberry smoothie", 79.00, "night market promotion discount 10 bath", pq.Array([]string{"food", "beverage"})),
+			).
+			WithArgs(in.Title, in.Amount, in.Note, pq.Array(in.Tags))
+
 		want := in
 
 		ctx := context.Background()
