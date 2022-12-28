@@ -74,3 +74,24 @@ func (s *Service) Update(ctx context.Context, in Expense) (Expense, error) {
 
 	return out, nil
 }
+
+func (s *Service) List(ctx context.Context) ([]Expense, error) {
+	query := `SELECT id, title, amount, note, tags from expenses`
+
+	out := make([]Expense, 0)
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return []Expense{}, fmt.Errorf("List(): db query context: %w", err)
+	}
+
+	for rows.Next() {
+		var expense Expense
+		err := rows.Scan(&expense.ID, &expense.Title, &expense.Amount, &expense.Note, pq.Array(&expense.Tags))
+		if err != nil {
+			return []Expense{}, fmt.Errorf("List(): db scan row: %w", err)
+		}
+		out = append(out, expense)
+	}
+
+	return out, nil
+}
