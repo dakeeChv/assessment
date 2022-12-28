@@ -300,3 +300,72 @@ func TestUpdateExpense(t *testing.T) {
 		assert.Empty(t, got.Tags)
 	})
 }
+
+func TestListExpenses(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	t.Run("Success", func(t *testing.T) {
+		lexpense := []expn.Expense{
+			{
+				ID:     1,
+				Title:  "apple smoothie",
+				Amount: 89,
+				Note:   "no discount",
+				Tags:   []string{"beverage"},
+			},
+			{
+				ID:     2,
+				Title:  "iPhone 14 Pro Max 1TB",
+				Amount: 66900,
+				Note:   "birthday gift from my love",
+				Tags:   []string{"gadget"},
+			},
+		}
+
+		mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, title, amount, note, tags from expenses`)).
+			WillReturnRows(
+				sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+					AddRow(lexpense[0].ID, lexpense[0].Title, lexpense[0].Amount, lexpense[0].Note, pq.Array(lexpense[0].Tags)).
+					AddRow(lexpense[1].ID, lexpense[1].Title, lexpense[1].Amount, lexpense[1].Note, pq.Array(lexpense[1].Tags)),
+			)
+
+		ctx := context.Background()
+		expense, _ := expn.NewService(ctx, db)
+
+		got, err := expense.List(ctx)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, got)
+		assert.Equal(t, 2, len(got))
+		assert.NotEmpty(t, got[0].ID)
+		assert.NotEmpty(t, got[1].ID)
+		assert.Equal(t, lexpense[0].Tags, got[0].Tags)
+	})
+
+	t.Run("Some error", func(t *testing.T) {
+		errwant := errors.New("some error")
+
+		mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, title, amount, note, tags from expenses`)).
+			WillReturnError(errwant)
+
+		ctx := context.Background()
+		expense, _ := expn.NewService(ctx, db)
+
+		got, err := expense.List(ctx)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+
+		assert.ErrorIs(t, err, errwant)
+		assert.Equal(t, 0, len(got))
+	})
+}
