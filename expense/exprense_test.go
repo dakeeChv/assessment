@@ -173,4 +173,26 @@ func TestGetExpense(t *testing.T) {
 		assert.Equal(t, expn.Expense{}, got)
 		assert.ErrorIs(t, err, expn.ErrNoExpense)
 	})
+
+	t.Run("Some error", func(t *testing.T) {
+		var id int64 = 1
+		want := errors.New("some error")
+
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, title, amount, note, tags from expenses where id=$1")).
+			WithArgs(id).
+			WillReturnError(want)
+
+		ctx := context.Background()
+		expense, _ := expn.NewService(ctx, db)
+
+		got, err := expense.Get(ctx, id)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+
+		assert.NotEmpty(t, err)
+		assert.Equal(t, expn.Expense{}, got)
+		assert.ErrorIs(t, err, want)
+	})
 }
