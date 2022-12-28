@@ -59,3 +59,18 @@ func (s *Service) Get(ctx context.Context, id int64) (Expense, error) {
 
 	return out, nil
 }
+
+func (s *Service) Update(ctx context.Context, in Expense) (Expense, error) {
+	query := `UPDATE expenses SET title=$1, amount=$2, note=$3, tags=$4 WHERE id=$5 RETURNING id, title, amount, note, tags`
+
+	var out Expense
+	err := s.db.QueryRowContext(ctx, query, in.Title, in.Amount, in.Note, pq.Array(in.Tags), in.ID).Scan(&out.ID, &out.Title, &out.Amount, &out.Note, pq.Array(&out.Tags))
+	if err == sql.ErrNoRows {
+		return Expense{}, ErrNoExpense
+	}
+	if err != nil {
+		return Expense{}, fmt.Errorf("Update(): db scan row: %w", err)
+	}
+
+	return out, nil
+}
