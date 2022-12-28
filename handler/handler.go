@@ -46,4 +46,5 @@ func (h *Handler) SetupRoute(e *echo.Echo) {
 	v1.POST("/expenses", h.CreateExpense)
 	v1.GET("/expenses/:id", h.GetExpense)
 	v1.PUT("/expenses/:id", h.UpdateExpense)
+	v1.GET("/expenses", h.ListExpenses)
 }

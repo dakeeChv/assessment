@@ -114,3 +114,19 @@ func (h *Handler) UpdateExpense(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, resp)
 }
+
+func (h *Handler) ListExpenses(c echo.Context) error {
+	ctx := c.Request().Context()
+	resp, err := h.expense.List(ctx)
+	if err != nil {
+		ref := uuid.New()
+		log.Printf("\nlogId: %s, %v\n", ref, err)
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"code":    500,
+			"status":  "Internal Server Error",
+			"Message": fmt.Sprintf("failed to processing request, refer: %s", ref),
+		})
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
