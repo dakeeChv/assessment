@@ -229,3 +229,53 @@ func TestUpdateExpenes(t *testing.T) {
 	err = e.Shutdown(ctx)
 	assert.NoError(t, err)
 }
+
+func TestListExpenses(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	e := echo.New()
+	db, err := sql.Open("postgres", pgdns)
+	if err != nil {
+		log.Printf("failed to db open: %v\n", err)
+	}
+	defer db.Close()
+	if err := db.PingContext(ctx); err != nil {
+		log.Printf("failed to db connect: %v\n", err)
+	}
+
+	expense, _ := expn.NewService(ctx, db)
+	h, _ := handler.NewHandler(ctx, expense)
+	h.SetupRoute(e)
+
+	go func() {
+		e.Start(fmt.Sprintf(":%d", port))
+	}()
+
+	t.Run("Success", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/expenses", port), nil)
+		assert.NoError(t, err)
+
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "November 10, 2009")
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.NoError(t, err)
+
+		got := []expn.Expense{}
+		err = json.NewDecoder(resp.Body).Decode(&got)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		if assert.NoError(t, err) {
+			// got not empty, because i add 2 record when migration db.
+			assert.NotEmpty(t, len(got))
+		}
+	})
+
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = e.Shutdown(ctx)
+	assert.NoError(t, err)
+}
